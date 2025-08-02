@@ -1,3 +1,5 @@
+require('dotenv').config(); // ✅ Loads .env file securely
+
 const fs = require('fs');
 const path = require('path');
 const { Client, Collection, GatewayIntentBits, EmbedBuilder } = require('discord.js');
@@ -43,7 +45,7 @@ client.once('ready', () => {
   console.log(`Bot is online as ${client.user.tag}`);
 });
 
-// Interaction (Modal) Handling for Tickets
+// Modal & ticket system (unchanged)
 const {
   ModalBuilder,
   TextInputBuilder,
@@ -53,55 +55,53 @@ const {
 } = require('discord.js');
 
 client.on('interactionCreate', async interaction => {
-  // Log Ticket Button
   if (interaction.isButton() && interaction.customId === 'log') {
     const modal = new ModalBuilder()
       .setCustomId('logTicketModal')
       .setTitle('Log Ticket');
 
-    const roleInput = new TextInputBuilder()
-      .setCustomId('roleInput')
-      .setLabel('Your Role')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
-
-    const logsRoleInput = new TextInputBuilder()
-      .setCustomId('logsRoleInput')
-      .setLabel('Logs Role')
-      .setStyle(TextInputStyle.Short)
-      .setRequired(true);
-
-    const reasonInput = new TextInputBuilder()
-      .setCustomId('reasonInput')
-      .setLabel('Reason for ticket')
-      .setStyle(TextInputStyle.Paragraph)
-      .setRequired(true);
-
-    const proofInput = new TextInputBuilder()
-      .setCustomId('proofInput')
-      .setLabel('Proof (link or description)')
-      .setStyle(TextInputStyle.Paragraph)
-      .setRequired(false);
-
     const modalComponents = [
-      new ActionRowBuilder().addComponents(roleInput),
-      new ActionRowBuilder().addComponents(logsRoleInput),
-      new ActionRowBuilder().addComponents(reasonInput),
-      new ActionRowBuilder().addComponents(proofInput)
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('roleInput')
+          .setLabel('Your Role')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+      ),
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('logsRoleInput')
+          .setLabel('Logs Role')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+      ),
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('reasonInput')
+          .setLabel('Reason for ticket')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(true)
+      ),
+      new ActionRowBuilder().addComponents(
+        new TextInputBuilder()
+          .setCustomId('proofInput')
+          .setLabel('Proof (link or description)')
+          .setStyle(TextInputStyle.Paragraph)
+          .setRequired(false)
+      )
     ];
 
     modal.addComponents(...modalComponents);
     await interaction.showModal(modal);
   }
 
-  // Modal Submission Handling
   if (interaction.isModalSubmit() && interaction.customId === 'logTicketModal') {
     const role = interaction.fields.getTextInputValue('roleInput');
     const logsRole = interaction.fields.getTextInputValue('logsRoleInput');
     const reason = interaction.fields.getTextInputValue('reasonInput');
     const proof = interaction.fields.getTextInputValue('proofInput');
 
-    const guild = client.guilds.cache.first(); // or use your server ID to be more specific
+    const guild = client.guilds.cache.first();
     const logsChannel = guild.channels.cache.find(c => c.name === 'ticket-logs');
 
     if (!logsChannel) {
@@ -129,8 +129,7 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-
-// 🎉 Welcome Embed System
+// 🎉 Welcome Message
 client.on('guildMemberAdd', async member => {
   const channel = member.guild.channels.cache.find(
     ch => ch.name === 'main-chat' && ch.isTextBased()
@@ -157,8 +156,7 @@ client.on('guildMemberAdd', async member => {
   }
 });
 
-
-// 👋 Goodbye Embed System
+// 👋 Goodbye Message
 client.on('guildMemberRemove', async member => {
   const channel = member.guild.channels.cache.find(
     ch => ch.name === 'main-chat' && ch.isTextBased()
@@ -184,4 +182,5 @@ client.on('guildMemberRemove', async member => {
   }
 });
 
-client.login(config.token);
+// ✅ Login using token from .env file
+client.login(process.env.DISCORD_TOKEN);
