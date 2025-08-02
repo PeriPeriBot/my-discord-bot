@@ -1,13 +1,14 @@
 const fs = require('fs');
 const path = require('path');
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { Client, Collection, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const config = require('./config.json');
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers // Needed for join/leave events
   ]
 });
 
@@ -42,6 +43,7 @@ client.once('ready', () => {
   console.log(`Bot is online as ${client.user.tag}`);
 });
 
+// Interaction (Modal) Handling for Tickets
 const {
   ModalBuilder,
   TextInputBuilder,
@@ -103,7 +105,6 @@ client.on('interactionCreate', async interaction => {
     const logsChannel = guild.channels.cache.find(c => c.name === 'ticket-logs');
 
     if (!logsChannel) {
-
       return interaction.reply({ content: 'Ticket logs channel not found.', ephemeral: true });
     }
 
@@ -125,6 +126,61 @@ client.on('interactionCreate', async interaction => {
 
     await logsChannel.send({ embeds: [embed] });
     await interaction.reply({ content: '✅ Ticket logged to #ticket-logs.', ephemeral: true });
+  }
+});
+
+
+// 🎉 Welcome Embed System
+client.on('guildMemberAdd', async member => {
+  const channel = member.guild.channels.cache.find(
+    ch => ch.name === 'main-chat' && ch.isTextBased()
+  );
+
+  if (!channel) return;
+
+  const welcomeEmbed = new EmbedBuilder()
+    .setColor(0xF1C40F)
+    .setTitle('🍗 Welcome to PeriPeri | Chicken Grill!')
+    .setDescription(`Hey <@${member.id}>! We're glad to have you here.\n\n**📜 Don’t forget to check out the #guidelines channel to help us keep things respectful and friendly.**`)
+    .setThumbnail(member.user.displayAvatarURL())
+    .setFooter({ text: 'Enjoy your stay!', iconURL: member.guild.iconURL() })
+    .setTimestamp();
+
+  const sentMsg = await channel.send({ embeds: [welcomeEmbed] });
+
+  try {
+    await sentMsg.react('👋');
+    await sentMsg.react('🔥');
+    await sentMsg.react('🍗');
+  } catch (error) {
+    console.error('Failed to react to welcome message:', error);
+  }
+});
+
+
+// 👋 Goodbye Embed System
+client.on('guildMemberRemove', async member => {
+  const channel = member.guild.channels.cache.find(
+    ch => ch.name === 'main-chat' && ch.isTextBased()
+  );
+
+  if (!channel) return;
+
+  const goodbyeEmbed = new EmbedBuilder()
+    .setColor(0xE74C3C)
+    .setTitle('👋 A Member Has Left')
+    .setDescription(`We’re sad to see <@${member.id}> go.\n\n**Thanks for being a part of PeriPeri | Chicken Grill. We hope to see you again someday!**`)
+    .setThumbnail(member.user.displayAvatarURL())
+    .setFooter({ text: 'Farewell from the PeriPeri Team!', iconURL: member.guild.iconURL() })
+    .setTimestamp();
+
+  const sentMsg = await channel.send({ embeds: [goodbyeEmbed] });
+
+  try {
+    await sentMsg.react('😢');
+    await sentMsg.react('👋');
+  } catch (error) {
+    console.error('Failed to react to goodbye message:', error);
   }
 });
 
